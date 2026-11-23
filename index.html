@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building & Estates — Luxury Real Estate & Property Marketplace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-serif { font-family: 'Playfair Display', serif; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 flex flex-col antialiased">
+
+  <!-- Toast Alert -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 hidden">
+    <div class="bg-slate-900 text-amber-400 px-5 py-3 rounded-xl shadow-2xl border border-amber-500/30 flex items-center gap-3">
+      <i class="fas fa-check-circle text-amber-400"></i>
+      <span id="toast-text" class="font-medium text-sm text-slate-100"></span>
+    </div>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        <!-- Logo -->
+        <div onclick="switchTab('home')" class="flex items-center gap-3 cursor-pointer group">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+            <i class="fas fa-home text-slate-950 text-lg"></i>
+          </div>
+          <div>
+            <span class="text-xl font-serif font-bold tracking-tight text-white block">BUILDING & ESTATES</span>
+            <span class="text-[10px] tracking-widest text-amber-400 uppercase font-semibold block -mt-1">Real Estate & Selling</span>
+          </div>
+        </div>
+
+        <!-- Desktop Nav Links -->
+        <nav id="desktop-nav" class="hidden md:flex items-center space-x-1"></nav>
+
+        <!-- Auth Controls -->
+        <div id="auth-header-controls" class="flex items-center gap-3"></div>
+      </div>
+    </div>
+
+    <!-- Mobile Submenu -->
+    <div id="mobile-nav" class="md:hidden flex overflow-x-auto border-t border-slate-800 bg-slate-900 px-4 py-2 gap-2 text-xs"></div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main id="main-content" class="flex-grow"></main>
+
+  <!-- Modal Container -->
+  <div id="modal-root"></div>
+
+  <!-- Footer -->
+  <footer class="bg-slate-950 text-slate-400 py-12 border-t border-slate-900 mt-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center">
+            <i class="fas fa-home text-slate-950 text-xs"></i>
+          </div>
+          <span class="text-lg font-serif font-bold text-white">BUILDING & ESTATES</span>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Premier real estate marketplace for luxury buying, renting, and property listing management across Nigeria.
+        </p>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-white mb-3 uppercase tracking-wider">Main Administrator</h4>
+        <p class="text-xs text-slate-300 font-semibold">Onwudinjo Daniel Chinedu</p>
+        <p class="text-xs text-slate-400 mt-1">Direct Contact: +234 803 605 7747</p>
+        <p class="text-xs text-slate-400 mt-1">Email: daniel.admin@gmail.com</p>
+        <p class="text-xs text-amber-400 mt-1">Available 24/7 for Property Meetings & Consultations</p>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-white mb-3 uppercase tracking-wider">Listing Fees</h4>
+        <p class="text-xs text-slate-400">For Sale Upload Fee: <span class="text-amber-400 font-bold">₦3,000</span></p>
+        <p class="text-xs text-slate-400 mt-1">For Rent Upload Fee: <span class="text-amber-400 font-bold">₦6,000</span></p>
+        <p class="text-xs text-slate-400 mt-1">Category Limit: <span class="text-slate-200 font-semibold">3 Free Photos / Section</span></p>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pt-6 border-t border-slate-900 text-center text-xs text-slate-500">
+      © 2026 Building & Estates Realty. All rights reserved.
+    </div>
+  </footer>
+
+  <script>
+    // ==========================================
+    // APPLICATION STATE
+    // ==========================================
+    const FREE_CATEGORY_LIMIT = 3;
+    const EXTRA_SLOT_FEE = 1000;
+
+    let activeTab = 'home'; // 'home' | 'uploads' | 'messages' | 'admin'
+    let filterMode = 'All'; // 'All' | 'Sale' | 'Rent'
+    let cityFilter = 'All';
+    let searchTerm = '';
+
+    let registeredUsers = [];
+    let currentUser = null;
+    let favorites = [];
+    let selectedChatId = 1;
+    let editingPropId = null;
+
+    // Upload Form State
+    let uploadState = {
+      listingType: 'Sale',
+      title: '',
+      tagline: '',
+      address: '',
+      city: 'Lagos',
+      isCustomCity: false,
+      customCity: '',
+      buyPrice: '',
+      rentMonthly: '',
+      beds: '3',
+      baths: '3',
+      sqft: '2500',
+      description: '',
+      categoryPhotos: {
+        exterior: ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'],
+        bedroom: ['https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80'],
+        kitchen: ['https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80'],
+        livingRoom: ['https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80'],
+        bathroom: ['https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80']
+      },
+      unlockedLimits: {
+        exterior: 3,
+        bedroom: 3,
+        kitchen: 3,
+        livingRoom: 3,
+        bathroom: 3
+      },
+      showPaymentStep: false
+    };
+
+    let properties = [
+      {
+        id: 1,
+        title: "The Royal Glass Mansion",
+        tagline: "Ultra-Modern Architectural Masterpiece",
+        listingType: "Sale",
+        buyPrice: 85000000,
+        rentMonthly: 450000,
+        rentYearly: 5000000,
+        address: "14 Banana Island Road, Ikoyi, Lagos",
+        city: "Lagos",
+        beds: 5,
+        baths: 6,
+        sqft: 6800,
+        yearBuilt: 2023,
+        ownerId: "admin-1",
+        images: {
+          exterior: [
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80"
+          ],
+          bedroom: [
+            "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1200&q=80"
+          ],
+          kitchen: [
+            "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?auto=format&fit=crop&w=1200&q=80"
+          ],
+          livingRoom: [
+            "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80"
+          ],
+          bathroom: [
+            "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=1200&q=80"
+          ]
+        },
+        amenities: ["Infinity Pool", "Smart Home System", "Wine Cellar", "Waterfront View", "Home Theater", "Private Spa"],
+        description: "Perched in exclusive Banana Island with sweeping waterfront views, this mansion is a triumph of contemporary architecture with top-of-the-line Italian finishes throughout.",
+        agent: {
+          name: "Onwudinjo Daniel Chinedu",
+          phone: "+234 803 605 7747",
+          email: "daniel.admin@gmail.com",
+          image: "c:\Users\HP\Pictures\Screenshots\Screenshot 2026-11-21 220710.png"
+        }
+      },
+      {
+        id: 2,
+        title: "Penthouse Horizon Suite",
+        tagline: "Panoramic Skyline Residence",
+        listingType: "Rent",
+        buyPrice: 65000000,
+        rentMonthly: 600000,
+        rentYearly: 6800000,
+        address: "Aso Drive, Maitama, Abuja",
+        city: "Abuja",
+        beds: 3,
+        baths: 3.5,
+        sqft: 3400,
+        yearBuilt: 2022,
+        ownerId: "admin-1",
+        images: {
+          exterior: [
+            "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1200&q=80"
+          ],
+          bedroom: [
+            "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1200&q=80"
+          ],
+          kitchen: [
+            "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?auto=format&fit=crop&w=1200&q=80"
+          ],
+          livingRoom: [
+            "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80"
+          ],
+          bathroom: [
+            "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=1200&q=80"
+          ]
+        },
+        amenities: ["Private Elevator", "24/7 Security", "Wrap-around Terrace", "Fitness Center", "Concierge Service", "Marble Island"],
+        description: "Offering luxury living in Maitama with soaring 14ft ceilings, custom marble kitchen, and private rooftop view of Abuja city.",
+        agent: {
+          name: "Onwudinjo Daniel Chinedu",
+          phone: "+234 803 605 7747",
+          email: "daniel.admin@gmail.com",
+          image: "c:\Users\HP\Pictures\Screenshots\Screenshot 2026-11-21 220710.png"
+        }
+      },
+      {
+        id: 3,
+        title: "Waterfront Ocean Villa",
+        tagline: "Private Dock & Resort Pool",
+        listingType: "Sale",
+        buyPrice: 120000000,
+        rentMonthly: 850000,
+        rentYearly: 9500000,
+        address: "Eko Atlantic City, Victoria Island, Lagos",
+        city: "Lagos",
+        beds: 6,
+        baths: 7,
+        sqft: 7900,
+        yearBuilt: 2023,
+        ownerId: "admin-1",
+        images: {
+          exterior: [
+            "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80"
+          ],
+          bedroom: [
+            "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80"
+          ],
+          kitchen: [
+            "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80"
+          ],
+          livingRoom: [
+            "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80"
+          ],
+          bathroom: [
+            "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=1200&q=80",
+            "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=1200&q=80"
+          ]
+        },
+        amenities: ["Private Boat Dock", "Resort Pool", "Outdoor Kitchen", "Guest House", "Gated Security", "Solar Powered"],
+        description: "An extraordinary tropical retreat featuring deep-water dockage, lush landscaping, and seamless indoor-outdoor living built to high standards.",
+        agent: {
+          name: "Onwudinjo Daniel Chinedu",
+          phone: "+234 803 605 7747",
+          email: "daniel.admin@gmail.com",
+          image: "c:\Users\HP\Pictures\Screenshots\Screenshot 2026-11-21 220710.png"
+        }
+      }
+    ];
+
+    let chats = [
+      {
+        id: 1,
+        propertyId: 1,
+        propertyTitle: "The Royal Glass Mansion",
+        buyerName: "Chidi Nnamdi",
+        buyerEmail: "chidi.nnamdi@gmail.com",
+        messages: [
+          { sender: 'buyer', text: "Hello! Is The Royal Glass Mansion still available for viewing?", time: "10:30 AM" },
+          { sender: 'owner', text: "Hello Chidi! Yes it is. Please contact Admin Daniel to schedule a time.", time: "10:32 AM" }
+        ]
+      }
+    ];
+
+    // ==========================================
+    // HELPERS
+    // ==========================================
+    let toastTimer = null;
+    function showToast(msg) {
+      const container = document.getElementById('toast-container');
+      const text = document.getElementById('toast-text');
+      text.textContent = msg;
+      container.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => container.classList.add('hidden'), 3500);
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      renderAll();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleFavorite(id, event) {
+      if (event) event.stopPropagation();
+      if (favorites.includes(id)) {
+        favorites = favorites.filter(f => f !== id);
+        showToast('Removed from saved properties');
+      } else {
+        favorites.push(id);
+        showToast('Added to saved properties!');
+      }
+      renderAll();
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      showToast('You have been logged out.');
+      renderAll();
+    }
+
+    // ==========================================
+    // NAVIGATION RENDER
+    // ==========================================
+    function renderNavigation() {
+      const tabs = [
+        { id: 'home', label: 'Home / Properties', mobileLabel: 'Home' },
+        { id: 'uploads', label: 'Upload Property', mobileLabel: 'Upload Property' },
+        { id: 'messages', label: 'My Uploads & Messages', mobileLabel: 'My Uploads & Messages' },
+        { id: 'admin', label: 'Contact Admin', mobileLabel: 'Contact Admin' }
+      ];
+
+      document.getElementById('desktop-nav').innerHTML = tabs.map(t => `
+        <button onclick="switchTab('${t.id}')" class="px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          activeTab === t.id
+            ? 'text-amber-400 bg-slate-800/90 shadow-inner font-semibold'
+            : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+        }">${t.label}</button>
+      `).join('');
+
+      document.getElementById('mobile-nav').innerHTML = tabs.map(t => `
+        <button onclick="switchTab('${t.id}')" class="px-3 py-1.5 rounded-md whitespace-nowrap ${
+          activeTab === t.id ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-300 bg-slate-800'
+        }">${t.mobileLabel}</button>
+      `).join('');
+
+      const authArea = document.getElementById('auth-header-controls');
+      if (currentUser) {
+        authArea.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="hidden sm:block text-right">
+              <div class="text-xs text-slate-400">Signed in as</div>
+              <div class="text-sm font-bold text-amber-400">${escapeHtml(currentUser.name)}</div>
+            </div>
+            <button onclick="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border border-slate-700">
+              Log Out
+            </button>
+          </div>
+        `;
+      } else {
+        authArea.innerHTML = `
+          <button onclick="openAuthModal('Log in to upload properties, view messages, or book meetings.')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl transition-all shadow-md text-xs sm:text-sm flex items-center gap-1.5">
+            <i class="fas fa-user"></i>
+            <span>Sign In / Sign Up</span>
+          </button>
+        `;
+      }
+    }
+
+    // ==========================================
+    // 1. HOME VIEW
+    // ==========================================
+    function renderHomeView() {
+      const availableCities = Array.from(new Set(properties.map(p => p.city).filter(Boolean)));
+      const filtered = properties.filter(p => {
+        const matchesType = filterMode === 'All' || p.listingType === filterMode;
+        const matchesCity = cityFilter === 'All' || p.city.toLowerCase() === cityFilter.toLowerCase();
+        const q = searchTerm.toLowerCase();
+        const matchesSearch = p.title.toLowerCase().includes(q) || p.address.toLowerCase().includes(q) || p.city.toLowerCase().includes(q);
+        return matchesType && matchesCity && matchesSearch;
+      });
+
+      const heading = filterMode === 'All' ? 'Featured Properties' : filterMode === 'Sale' ? 'Properties For Sale' : 'Properties For Rent';
+
+      return `
+        <div class="space-y-12">
+          <!-- Hero Banner -->
+          <section class="relative bg-slate-950 text-white py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <div class="absolute inset-0 opacity-20">
+              <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1800&q=80" alt="Hero Background" class="w-full h-full object-cover" />
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
+            </div>
+
+            <div class="relative max-w-5xl mx-auto text-center space-y-6">
+              <span class="inline-block bg-amber-500/10 border border-amber-500/30 text-amber-400 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest">
+                Verified Luxury Real Estate Platform
+              </span>
+              <h1 class="text-4xl sm:text-6xl font-serif font-bold tracking-tight text-white">
+                Find Your Dream Sanctuary
+              </h1>
+              <p class="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto font-light">
+                Explore premium houses for sale or rent. Click any room detail to inspect bedroom or kitchen interiors before meeting our Executive Admin.
+              </p>
+
+              <!-- Filter Bar -->
+              <div class="bg-white/10 backdrop-blur-xl p-4 sm:p-6 rounded-3xl border border-white/15 max-w-4xl mx-auto shadow-2xl">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div class="flex rounded-xl bg-slate-900/80 p-1 border border-slate-700">
+                    ${['All', 'Sale', 'Rent'].map(type => `
+                      <button onclick="setFilterMode('${type}')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                        filterMode === type ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-300 hover:text-white'
+                      }">${type === 'All' ? 'All Homes' : type === 'Sale' ? 'For Sale' : 'For Rent'}</button>
+                    `).join('')}
+                  </div>
+
+                  <select onchange="setCityFilter(this.value)" class="bg-slate-900/80 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-amber-500">
+                    <option value="All" ${cityFilter === 'All' ? 'selected' : ''}>All Locations (${escapeHtml(availableCities.join(', '))})</option>
+                    ${availableCities.map(c => `<option value="${escapeHtml(c)}" ${cityFilter === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+                  </select>
+
+                  <div class="relative">
+                    <i class="fas fa-search text-slate-400 text-xs absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" placeholder="Search location or keyword..." value="${escapeHtml(searchTerm)}" oninput="setSearchTerm(this.value)" class="w-full bg-slate-900/80 text-white pl-10 pr-4 py-2.5 rounded-xl border border-slate-700 text-xs focus:outline-none focus:border-amber-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Property Cards Section -->
+          <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+              <div>
+                <h2 class="text-2xl font-serif font-bold text-slate-900">${heading}</h2>
+                <p class="text-slate-500 text-xs mt-1">Showing ${filtered.length} verified available properties</p>
+              </div>
+              <div class="flex gap-2">
+                <span class="text-xs bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg">Rent Fee: ₦6,000 to upload</span>
+                <span class="text-xs bg-amber-100 text-amber-900 font-semibold px-3 py-1.5 rounded-lg">Buy Fee: ₦3,000 to upload</span>
+              </div>
+            </div>
+
+            ${filtered.length > 0 ? `
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                ${filtered.map(prop => renderPropertyCard(prop)).join('')}
+              </div>
+            ` : `
+              <div class="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                <i class="fas fa-home text-4xl text-slate-300 mb-3"></i>
+                <h3 class="text-lg font-bold text-slate-700">No properties found</h3>
+                <p class="text-xs text-slate-500 mt-1">Try switching filter tabs or altering your search text.</p>
+              </div>
+            `}
+          </section>
+        </div>
+      `;
+    }
+
+    function setFilterMode(mode) { filterMode = mode; renderAll(); }
+    function setCityFilter(city) { cityFilter = city; renderAll(); }
+    function setSearchTerm(val) {
+      searchTerm = val;
+      const cardsGrid = document.querySelector('#main-content section:last-child');
+      if (cardsGrid) renderAll();
+    }
+
+    function renderPropertyCard(prop) {
+      const extImg = Array.isArray(prop.images.exterior) ? prop.images.exterior[0] : prop.images.exterior;
+      const isFav = favorites.includes(prop.id);
+
+      return `
+        <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 hover:shadow-2xl transition-all duration-300 flex flex-col group">
+          <div class="relative h-64 overflow-hidden bg-slate-900 cursor-pointer" onclick="openPropertyModal(${prop.id}, 'exterior')">
+            <img src="${extImg}" alt="${escapeHtml(prop.title)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20"></div>
+
+            <div class="absolute top-4 left-4">
+              <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-md ${
+                prop.listingType === 'Sale' ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 text-white'
+              }">For ${prop.listingType}</span>
+            </div>
+
+            <button onclick="toggleFavorite(${prop.id}, event)" class="absolute top-4 right-4 w-9 h-9 bg-slate-900/60 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-slate-900 transition-colors">
+              <i class="fas fa-heart text-sm ${isFav ? 'text-rose-500' : 'text-white'}"></i>
+            </button>
+
+            <div class="absolute bottom-3 left-4 right-4 text-white flex items-center justify-between">
+              <div class="flex items-center gap-1.5 text-xs text-slate-200 truncate">
+                <i class="fas fa-map-marker-alt text-amber-400"></i>
+                <span class="truncate font-medium">${escapeHtml(prop.address)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-5 flex-grow flex flex-col justify-between space-y-4">
+            <div>
+              <h3 onclick="openPropertyModal(${prop.id}, 'exterior')" class="font-serif font-bold text-lg text-slate-900 hover:text-amber-600 transition-colors cursor-pointer">
+                ${escapeHtml(prop.title)}
+              </h3>
+              <p class="text-xs text-slate-500 font-medium line-clamp-1">${escapeHtml(prop.tagline)}</p>
+
+              <!-- Pricing Breakdown -->
+              <div class="mt-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/60 space-y-1.5">
+                <div class="flex justify-between items-baseline">
+                  <span class="text-[11px] text-slate-500 font-semibold uppercase">Buy Price:</span>
+                  <span class="font-serif font-bold text-slate-900 text-base">₦${prop.buyPrice.toLocaleString()}</span>
+                </div>
+                <div class="flex justify-between items-baseline pt-1 border-t border-slate-200/60">
+                  <span class="text-[11px] text-slate-500 font-semibold uppercase">Rent Pay:</span>
+                  <span class="text-xs font-bold text-emerald-700 text-right">
+                    ₦${prop.rentMonthly.toLocaleString()} <span class="text-[10px] text-slate-400 font-normal">/ month</span>
+                    <span class="block text-[10px] text-slate-500 font-normal">(₦${prop.rentYearly.toLocaleString()} / year)</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Inspect Interior Rooms -->
+              <div class="mt-4 pt-3 border-t border-slate-100">
+                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Inspect Interior Rooms:</div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <button onclick="openPropertyModal(${prop.id}, 'bedroom')" class="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 px-2.5 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 transition-colors">
+                    <i class="fas fa-bed text-amber-600"></i>
+                    <span>Bedrooms (${prop.beds})</span>
+                  </button>
+                  <button onclick="openPropertyModal(${prop.id}, 'kitchen')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300/70 px-2.5 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 transition-colors">
+                    <i class="fas fa-utensils text-slate-600"></i>
+                    <span>Kitchen</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-slate-600 text-xs">
+              <div class="flex items-center gap-3">
+                <span><i class="fas fa-bed mr-1"></i>${prop.beds}</span>
+                <span><i class="fas fa-bath mr-1"></i>${prop.baths}</span>
+                <span><i class="fas fa-expand-arrows-alt mr-1"></i>${prop.sqft} sqft</span>
+              </div>
+
+              <button onclick="triggerScheduleMeeting(${prop.id})" class="bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-amber-400 font-bold px-3 py-1.5 rounded-xl text-[11px] transition-all flex items-center gap-1.5 shadow-sm">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Book Meeting</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 2. PROPERTY DETAIL & INTERIOR VIEWER MODAL
+    // ==========================================
+    let modalPropId = null;
+    let modalRoomTab = 'exterior';
+    let modalPhotoIdx = 0;
+
+    function openPropertyModal(propId, roomTab = 'exterior') {
+      modalPropId = propId;
+      modalRoomTab = roomTab;
+      modalPhotoIdx = 0;
+      renderPropertyModal();
+    }
+
+    function selectModalRoomTab(tab) {
+      modalRoomTab = tab;
+      modalPhotoIdx = 0;
+      renderPropertyModal();
+    }
+
+    function selectModalPhotoIndex(idx) {
+      modalPhotoIdx = idx;
+      renderPropertyModal();
+    }
+
+    function closeModal() {
+      document.getElementById('modal-root').innerHTML = '';
+    }
+
+    function renderPropertyModal() {
+      const prop = properties.find(p => p.id === modalPropId);
+      if (!prop) return;
+
+      const getArr = (key) => Array.isArray(prop.images[key]) ? prop.images[key] : [prop.images[key]];
+      const photos = getArr(modalRoomTab);
+      const activeSrc = photos[modalPhotoIdx] || photos[0];
+
+      const roomTabs = [
+        { id: 'exterior', label: 'Exterior' },
+        { id: 'bedroom', label: 'Bedrooms' },
+        { id: 'kitchen', label: 'Kitchen' },
+        { id: 'livingRoom', label: 'Living Room' },
+        { id: 'bathroom', label: 'Bathroom' }
+      ];
+
+      document.getElementById('modal-root').innerHTML = `
+        <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 my-auto animate-fade-in">
+            <div class="sticky top-0 z-20 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">For ${prop.listingType} • ${escapeHtml(prop.city)}</span>
+                <h2 class="text-xl font-serif font-bold text-slate-900">${escapeHtml(prop.title)}</h2>
+              </div>
+              <button onclick="closeModal()" class="p-2 rounded-full hover:bg-slate-100 text-slate-500">
+                <i class="fas fa-times text-lg"></i>
+              </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+              <div class="space-y-3">
+                <div class="relative h-80 sm:h-96 rounded-2xl overflow-hidden bg-slate-950 shadow-inner">
+                  <img src="${activeSrc}" alt="${modalRoomTab}" class="w-full h-full object-cover animate-fade-in" />
+                  <div class="absolute bottom-4 left-4 bg-slate-950/75 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-lg border border-white/20 capitalize font-medium">
+                    Viewing: <span class="text-amber-400 font-bold">${modalRoomTab === 'exterior' ? 'Exterior & Grounds' : modalRoomTab}</span> (${modalPhotoIdx + 1} of ${photos.length})
+                  </div>
+                </div>
+
+                ${photos.length > 1 ? `
+                  <div class="flex gap-2.5 overflow-x-auto py-1">
+                    ${photos.map((url, idx) => `
+                      <button onclick="selectModalPhotoIndex(${idx})" class="relative w-20 h-14 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${
+                        modalPhotoIdx === idx ? 'border-amber-500 scale-105 shadow-md' : 'border-slate-200 opacity-70 hover:opacity-100'
+                      }">
+                        <img src="${url}" class="w-full h-full object-cover" />
+                      </button>
+                    `).join('')}
+                  </div>
+                ` : ''}
+
+                <div class="flex gap-2 overflow-x-auto pb-1 text-xs font-semibold">
+                  ${roomTabs.map(t => `
+                    <button onclick="selectModalRoomTab('${t.id}')" class="px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${
+                      modalRoomTab === t.id
+                        ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-md font-bold'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }">${t.label} (${getArr(t.id).length})</button>
+                  `).join('')}
+                </div>
+              </div>
+
+              <!-- Pricing Comparison -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div class="bg-white p-3.5 rounded-xl border border-slate-200/80">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Purchase Price (Buy)</span>
+                  <div class="text-2xl font-serif font-bold text-slate-900 mt-1">₦${prop.buyPrice.toLocaleString()}</div>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Full title ownership transfer</p>
+                </div>
+                <div class="bg-white p-3.5 rounded-xl border border-slate-200/80">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rental Price Rate</span>
+                  <div class="text-xl font-serif font-bold text-emerald-700 mt-1">₦${prop.rentMonthly.toLocaleString()} <span class="text-xs font-normal text-slate-500">/ mo</span></div>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Yearly: ₦${prop.rentYearly.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <!-- Specs -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-3 border-y border-slate-100 text-center text-xs">
+                <div class="p-3 bg-slate-50 rounded-xl"><div class="text-slate-400 mb-1">Bedrooms</div><div class="font-bold text-slate-800 text-sm">${prop.beds} Rooms</div></div>
+                <div class="p-3 bg-slate-50 rounded-xl"><div class="text-slate-400 mb-1">Bathrooms</div><div class="font-bold text-slate-800 text-sm">${prop.baths} Baths</div></div>
+                <div class="p-3 bg-slate-50 rounded-xl"><div class="text-slate-400 mb-1">Total Area</div><div class="font-bold text-slate-800 text-sm">${prop.sqft} sqft</div></div>
+                <div class="p-3 bg-slate-50 rounded-xl"><div class="text-slate-400 mb-1">Year Built</div><div class="font-bold text-slate-800 text-sm">${prop.yearBuilt}</div></div>
+              </div>
+
+              <div>
+                <h4 class="font-serif font-bold text-slate-900 text-sm mb-2">About Property</h4>
+                <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(prop.description)}</p>
+              </div>
+
+              <!-- Assigned Admin -->
+              <div class="bg-slate-950 text-white p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <img src="${prop.agent.image}" class="w-12 h-12 rounded-full object-cover border-2 border-amber-400" />
+                  <div>
+                    <div class="text-xs text-slate-400">Assigned Managing Admin</div>
+                    <div class="font-bold text-sm text-white">${escapeHtml(prop.agent.name)}</div>
+                    <div class="text-xs text-amber-400">${escapeHtml(prop.agent.phone)}</div>
+                  </div>
+                </div>
+                <button onclick="closeModal(); triggerScheduleMeeting(${prop.id});" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider">
+                  Contact Admin To Discuss Meeting
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 3. UPLOAD PROPERTY VIEW (3-PHOTO LIMIT + EXTRA FEE + CUSTOM CITY)
+    // ==========================================
+    function renderUploadView() {
+      if (!currentUser) {
+        return `
+          <div class="max-w-3xl mx-auto px-4 py-20 text-center">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl space-y-4">
+              <i class="fas fa-lock text-4xl text-amber-500"></i>
+              <h2 class="text-2xl font-serif font-bold text-slate-900">Sign In Required to Upload</h2>
+              <p class="text-xs text-slate-500 max-w-md mx-auto">
+                Before uploading your building property for sale or rent, you must log in or sign up to manage your listing and chat with interested buyers.
+              </p>
+              <button onclick="openAuthModal('Sign up or log in to list your house for sale or rent.')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider">
+                Sign In / Sign Up Now
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      const baseFee = uploadState.listingType === 'Sale' ? 3000 : 6000;
+
+      if (uploadState.showPaymentStep) {
+        return `
+          <div class="max-w-lg mx-auto px-4 py-10">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xl space-y-6 animate-fade-in">
+              <div class="text-center space-y-2 border-b border-slate-100 pb-4">
+                <i class="fas fa-credit-card text-3xl text-amber-500"></i>
+                <h3 class="font-serif font-bold text-xl text-slate-900">Complete Listing Payment</h3>
+                <p class="text-xs text-slate-500">Payment required to publish listing under <span class="font-bold text-slate-800">For ${uploadState.listingType}</span> page.</p>
+              </div>
+
+              <div class="bg-slate-50 p-4 rounded-2xl space-y-2 text-xs">
+                <div class="flex justify-between"><span class="text-slate-500">Listing Purpose:</span><span class="font-bold text-slate-800">For ${uploadState.listingType}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Publisher:</span><span class="font-bold text-slate-800">${escapeHtml(currentUser.name)}</span></div>
+                <div class="flex justify-between border-t border-slate-200 pt-2 font-bold text-sm">
+                  <span class="text-slate-900">Total Fee:</span>
+                  <span class="text-amber-600">₦${baseFee.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div class="space-y-3 text-xs">
+                <input type="text" value="${escapeHtml(currentUser.name)}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5" placeholder="Cardholder Name" />
+                <input type="text" value="5399 4000 1234 5678" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5" placeholder="Card Number" />
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" value="12/28" class="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5" placeholder="MM/YY" />
+                  <input type="text" value="888" class="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5" placeholder="CVV" />
+                </div>
+              </div>
+
+              <div class="flex gap-3">
+                <button type="button" onclick="uploadState.showPaymentStep = false; renderAll();" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl text-xs">Back</button>
+                <button type="button" onclick="confirmPaymentAndPublish()" class="w-2/3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Pay ₦${baseFee.toLocaleString()} & Publish</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      const sections = [
+        { key: 'exterior', title: 'Section A: The Exterior (Front View, Compound & Gate)', badge: 'bg-amber-100 text-amber-900' },
+        { key: 'bedroom', title: 'Section B1: The Interior — Bedrooms (Master & Guest Rooms)', badge: 'bg-emerald-100 text-emerald-900' },
+        { key: 'kitchen', title: 'Section B2: The Interior — Kitchen (Cabinets, Island & Dining)', badge: 'bg-emerald-100 text-emerald-900' },
+        { key: 'livingRoom', title: 'Section B3: The Interior — Living Room (Parlor & Lounge)', badge: 'bg-emerald-100 text-emerald-900' },
+        { key: 'bathroom', title: 'Section B4: The Interior — Bathrooms (Toilets & Showers)', badge: 'bg-emerald-100 text-emerald-900' }
+      ];
+
+      return `
+        <div class="max-w-4xl mx-auto px-4 py-10 space-y-8">
+          <div>
+            <h1 class="text-3xl font-serif font-bold text-slate-900">Upload Property Listing</h1>
+            <p class="text-xs text-slate-500 mt-1">Post your home to buyers and renters nationwide. Flat fee: ₦3,000 for BUY / ₦6,000 for RENT (includes up to 3 photos per house category).</p>
+          </div>
+
+          <form onsubmit="submitUploadForm(event)" class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xl space-y-6">
+            <!-- Purpose -->
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">1. Choose Listing Purpose *</label>
+              <div class="grid grid-cols-2 gap-4">
+                <button type="button" onclick="uploadState.listingType = 'Sale'; renderAll();" class="p-4 rounded-2xl border-2 text-left transition-all ${
+                  uploadState.listingType === 'Sale' ? 'border-amber-500 bg-amber-50/50 text-slate-950' : 'border-slate-200 bg-slate-50 text-slate-600'
+                }">
+                  <div class="font-bold text-sm">For Sale (Buy)</div>
+                  <div class="text-xs text-amber-600 font-semibold mt-1">Listing Fee: ₦3,000</div>
+                </button>
+                <button type="button" onclick="uploadState.listingType = 'Rent'; renderAll();" class="p-4 rounded-2xl border-2 text-left transition-all ${
+                  uploadState.listingType === 'Rent' ? 'border-emerald-500 bg-emerald-50/50 text-slate-950' : 'border-slate-200 bg-slate-50 text-slate-600'
+                }">
+                  <div class="font-bold text-sm">For Rent</div>
+                  <div class="text-xs text-emerald-700 font-semibold mt-1">Listing Fee: ₦6,000</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Title & Tagline -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Property Title *</label>
+                <input type="text" required placeholder="e.g. Modern 4 Bedroom Duplex" value="${escapeHtml(uploadState.title)}" oninput="uploadState.title = this.value" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Tagline / Short Subtitle</label>
+                <input type="text" placeholder="e.g. Luxury Living in Prime Location" value="${escapeHtml(uploadState.tagline)}" oninput="uploadState.tagline = this.value" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
+              </div>
+            </div>
+
+            <!-- Address & City (with custom typing option) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Full Address *</label>
+                <input type="text" required placeholder="Street address, neighborhood" value="${escapeHtml(uploadState.address)}" oninput="uploadState.address = this.value" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">City / Location *</label>
+                ${!uploadState.isCustomCity ? `
+                  <select onchange="handleCityDropdownChange(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-amber-500">
+                    ${['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan', 'Enugu', 'Kano', 'Owerri'].map(c => `
+                      <option value="${c}" ${uploadState.city === c ? 'selected' : ''}>${c}</option>
+                    `).join('')}
+                    <option value="__CUSTOM__">+ Type another city / place...</option>
+                  </select>
+                ` : `
+                  <div class="flex gap-1.5">
+                    <input type="text" required placeholder="Type city or location..." value="${escapeHtml(uploadState.customCity)}" oninput="uploadState.customCity = this.value" class="w-full bg-slate-50 border border-amber-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none" />
+                    <button type="button" onclick="uploadState.isCustomCity = false; uploadState.city = 'Lagos'; renderAll();" class="px-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-[11px] font-bold">List</button>
+                  </div>
+                `}
+              </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Buy Price (₦) *</label>
+                <input type="number" required placeholder="e.g. 50000000" value="${escapeHtml(uploadState.buyPrice)}" oninput="uploadState.buyPrice = this.value" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Rent Monthly Rate (₦) *</label>
+                <input type="number" required placeholder="e.g. 400000" value="${escapeHtml(uploadState.rentMonthly)}" oninput="uploadState.rentMonthly = this.value" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
+              </div>
+            </div>
+
+            <!-- Exterior & Interior Sections -->
+            <div class="space-y-6 pt-2">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">2. Upload House Pictures: The Exterior & The Interior *</label>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Each category allows up to <strong>3 photos/details</strong>. Need more than 3 in a category? Pay ₦${EXTRA_SLOT_FEE.toLocaleString()} per extra slot.</p>
+                </div>
+                <span class="text-[11px] font-bold bg-slate-900 text-amber-400 px-3 py-1 rounded-full self-start">Limit: 3 Free / Category</span>
+              </div>
+
+              ${sections.map(sec => {
+                const photos = uploadState.categoryPhotos[sec.key];
+                const maxAllowed = uploadState.unlockedLimits[sec.key];
+                const isAtLimit = photos.length >= maxAllowed;
+
+                return `
+                  <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-2.5">
+                      <h3 class="font-serif font-bold text-sm text-slate-900">${sec.title}</h3>
+                      <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full ${sec.badge}">
+                        ${photos.length} / ${maxAllowed} Used ${maxAllowed > FREE_CATEGORY_LIMIT ? `(+${maxAllowed - FREE_CATEGORY_LIMIT} Paid)` : '(Free Limit: 3)'}
+                      </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      ${photos.map((url, idx) => `
+                        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2.5 flex flex-col justify-between">
+                          <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-700">Photo #${idx + 1} ${idx >= FREE_CATEGORY_LIMIT ? '<span class="text-amber-600">(Paid Slot)</span>' : ''}</span>
+                            ${photos.length > 1 ? `<button type="button" onclick="removePhotoSlot('${sec.key}', ${idx})" class="text-rose-500 hover:text-rose-700 text-[10px] font-bold">Remove</button>` : ''}
+                          </div>
+
+                          <div class="relative h-32 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                            <img id="up-preview-${sec.key}-${idx}" src="${url || 'https://placehold.co/600x400/e2e8f0/475569?text=Select+Photo'}" onerror="this.src='https://placehold.co/600x400/e2e8f0/475569?text=Select+Photo'" class="w-full h-full object-cover" />
+                          </div>
+
+                          <label class="w-full bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white font-bold py-1.5 px-2.5 rounded-xl text-[11px] cursor-pointer transition-colors flex items-center justify-center gap-1.5">
+                            <i class="fas fa-camera"></i>
+                            <span>Choose Image File</span>
+                            <input type="file" accept="image/*" onchange="handleUploadFile(event, '${sec.key}', ${idx})" class="hidden" />
+                          </label>
+
+                          <input type="text" value="${escapeHtml(url)}" oninput="updateUploadPhotoUrl('${sec.key}', ${idx}, this.value)" placeholder="Or paste image URL..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-600 focus:outline-none focus:border-amber-500" />
+                        </div>
+                      `).join('')}
+
+                      <button type="button" onclick="handleAddSlotClick('${sec.key}', '${escapeHtml(sec.title)}')" class="min-h-[210px] rounded-2xl border-2 border-dashed p-4 flex flex-col items-center justify-center text-center transition-all space-y-2 ${
+                        isAtLimit ? 'border-amber-400 bg-amber-50/60 hover:bg-amber-100/70 text-amber-900' : 'border-slate-300 bg-white hover:border-slate-900 text-slate-700'
+                      }">
+                        ${isAtLimit ? `
+                          <div class="w-10 h-10 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shadow-sm"><i class="fas fa-lock"></i></div>
+                          <div class="font-bold text-xs">3/3 Limit Reached</div>
+                          <div class="text-[11px] text-amber-800">Pay ₦${EXTRA_SLOT_FEE.toLocaleString()} to add more details/photos</div>
+                        ` : `
+                          <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-800 flex items-center justify-center"><i class="fas fa-plus"></i></div>
+                          <div class="font-bold text-xs">Add Photo #${photos.length + 1}</div>
+                          <div class="text-[10px] text-slate-500">${maxAllowed - photos.length} slot(s) remaining in limit</div>
+                        `}
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            <button type="submit" class="w-full bg-slate-950 hover:bg-slate-800 text-amber-400 font-bold py-3.5 rounded-xl transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+              <span>Proceed to Fee Checkout (₦${baseFee.toLocaleString()})</span>
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </form>
+        </div>
+      `;
+    }
+
+    function handleCityDropdownChange(val) {
+      if (val === '__CUSTOM__') {
+        uploadState.isCustomCity = true;
+        uploadState.customCity = '';
+      } else {
+        uploadState.city = val;
+      }
+      renderAll();
+    }
+
+    function updateUploadPhotoUrl(key, idx, val) {
+      uploadState.categoryPhotos[key][idx] = val;
+      const imgEl = document.getElementById(`up-preview-${key}-${idx}`);
+      if (imgEl) imgEl.src = val.trim() || 'https://placehold.co/600x400/e2e8f0/475569?text=Select+Photo';
+    }
+
+    function handleUploadFile(event, key, idx) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        uploadState.categoryPhotos[key][idx] = e.target.result;
+        showToast(`${key} photo #${idx + 1} uploaded!`);
+        renderAll();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removePhotoSlot(key, idx) {
+      if (uploadState.categoryPhotos[key].length <= 1) return;
+      uploadState.categoryPhotos[key].splice(idx, 1);
+      renderAll();
+    }
+
+    function handleAddSlotClick(key, label) {
+      const count = uploadState.categoryPhotos[key].length;
+      const allowed = uploadState.unlockedLimits[key];
+      if (count >= allowed) {
+        openLimitPromptModal(key, label);
+        return;
+      }
+      uploadState.categoryPhotos[key].push('');
+      renderAll();
+    }
+
+    function openLimitPromptModal(key, label) {
+      document.getElementById('modal-root').innerHTML = `
+        <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-fade-in">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-lock text-amber-500"></i>
+                <h3 class="font-serif font-bold text-lg text-slate-900">Category Limit Reached (3/3)</h3>
+              </div>
+              <button onclick="closeModal()"><i class="fas fa-times text-slate-400"></i></button>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs text-amber-950 space-y-2">
+              <p class="font-bold text-sm">You have reached the 3-photo limit for "${label}".</p>
+              <p class="text-amber-800 leading-relaxed">
+                Each part of the house allows up to <strong>3 details/photos</strong> in the standard upload package. Pay <strong>₦${EXTRA_SLOT_FEE.toLocaleString()}</strong> to unlock an additional photo slot for this section.
+              </p>
+            </div>
+            <div class="flex gap-3">
+              <button onclick="closeModal()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl text-xs">Cancel</button>
+              <button onclick="unlockExtraCategorySlot('${key}', '${label}')" class="w-2/3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-1.5">
+                <i class="fas fa-credit-card"></i>
+                <span>Pay ₦${EXTRA_SLOT_FEE.toLocaleString()} to Add More</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function unlockExtraCategorySlot(key, label) {
+      uploadState.unlockedLimits[key] += 1;
+      uploadState.categoryPhotos[key].push('');
+      closeModal();
+      showToast(`₦${EXTRA_SLOT_FEE.toLocaleString()} paid! Extra photo slot unlocked.`);
+      renderAll();
+    }
+
+    function submitUploadForm(e) {
+      e.preventDefault();
+      if (!currentUser) {
+        openAuthModal('You must sign in or create an account before uploading a property listing.');
+        return;
+      }
+      uploadState.showPaymentStep = true;
+      renderAll();
+    }
+
+    function confirmPaymentAndPublish() {
+      const sanitize = (arr, fallback) => {
+        const valid = arr.filter(u => u && u.trim() !== '');
+        return valid.length > 0 ? valid : [fallback];
+      };
+      const baseFee = uploadState.listingType === 'Sale' ? 3000 : 6000;
+      const chosenCity = (uploadState.isCustomCity ? uploadState.customCity.trim() : uploadState.city) || 'Lagos';
+
+      const newListing = {
+        id: Date.now(),
+        title: uploadState.title || "Modern Luxury Property",
+        tagline: uploadState.tagline || "Newly Listed Residence",
+        listingType: uploadState.listingType,
+        buyPrice: Number(uploadState.buyPrice) || 45000000,
+        rentMonthly: Number(uploadState.rentMonthly) || 350000,
+        rentYearly: (Number(uploadState.rentMonthly) || 350000) * 12,
+        address: uploadState.address || "Victoria Island, Lagos",
+        city: chosenCity,
+        beds: Number(uploadState.beds) || 4,
+        baths: Number(uploadState.baths) || 4,
+        sqft: Number(uploadState.sqft) || 3200,
+        yearBuilt: 2026,
+        ownerId: currentUser.id,
+        images: {
+          exterior: sanitize(uploadState.categoryPhotos.exterior, 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'),
+          bedroom: sanitize(uploadState.categoryPhotos.bedroom, 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80'),
+          kitchen: sanitize(uploadState.categoryPhotos.kitchen, 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80'),
+          livingRoom: sanitize(uploadState.categoryPhotos.livingRoom, 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80'),
+          bathroom: sanitize(uploadState.categoryPhotos.bathroom, 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80')
+        },
+        description: "Gorgeous newly listed property located in a prime neighborhood with top security.",
+        agent: {
+          name: currentUser.name,
+          phone: currentUser.phone || "+234 803 605 7747",
+          email: currentUser.email,
+          image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
+        }
+      };
+
+      properties.unshift(newListing);
+      uploadState.showPaymentStep = false;
+      uploadState.title = '';
+      uploadState.tagline = '';
+      uploadState.address = '';
+      showToast(`Property published to 'For ${newListing.listingType}' after ₦${baseFee.toLocaleString()} payment!`);
+      switchTab('messages');
+    }
+
+    // ==========================================
+    // 4. MY UPLOADS & SPEECH BUBBLE MESSAGES
+    // ==========================================
+    function renderMessagesView() {
+      if (!currentUser) {
+        return `
+          <div class="max-w-3xl mx-auto px-4 py-20 text-center">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl space-y-4">
+              <i class="fas fa-lock text-4xl text-amber-500"></i>
+              <h2 class="text-2xl font-serif font-bold text-slate-900">Sign In to View Your Uploads & Messages</h2>
+              <p class="text-xs text-slate-500 max-w-md mx-auto">Log in to view your uploaded properties, edit details, and respond to buyer inquiry messages.</p>
+              <button onclick="openAuthModal('Sign up or log in to view your uploaded properties and chats.')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider">
+                Sign In / Sign Up
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      const userUploads = properties.filter(p => p.ownerId === currentUser.id);
+      if (userUploads.length === 0) {
+        return `
+          <div class="max-w-2xl mx-auto px-4 py-20 text-center">
+            <div class="bg-white p-10 rounded-3xl border border-slate-200 shadow-xl space-y-4">
+              <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                <i class="fas fa-home text-2xl"></i>
+              </div>
+              <h2 class="text-2xl font-serif font-bold text-slate-900">no uploads yet</h2>
+              <p class="text-xs text-slate-500">You haven't uploaded any house property listings for sale or rent.</p>
+              <button onclick="switchTab('uploads')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider mt-2 inline-flex items-center gap-2">
+                <i class="fas fa-plus"></i>
+                <span>go to uploads</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      const currentChat = chats.find(c => c.id === selectedChatId) || chats[0];
+
+      return `
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+          <section class="space-y-4">
+            <h2 class="text-2xl font-serif font-bold text-slate-900">My Uploaded Properties (${userUploads.length})</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              ${userUploads.map(prop => `
+                <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-md space-y-3 flex flex-col justify-between">
+                  <div class="flex items-center gap-3">
+                    <img src="${Array.isArray(prop.images.exterior) ? prop.images.exterior[0] : prop.images.exterior}" class="w-16 h-16 rounded-xl object-cover" />
+                    <div class="flex-grow">
+                      ${editingPropId === prop.id
+                        ? `<input id="edit-title-input-${prop.id}" type="text" value="${escapeHtml(prop.title)}" class="border border-amber-500 rounded px-2 py-1 text-xs w-full" />`
+                        : `<h4 class="font-bold text-sm text-slate-900">${escapeHtml(prop.title)}</h4>`
+                      }
+                      <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">For ${prop.listingType}</span>
+                    </div>
+                  </div>
+                  <div class="text-xs text-slate-500 flex justify-between border-t border-slate-100 pt-2">
+                    <span>Buy: ₦${prop.buyPrice.toLocaleString()}</span>
+                    <span>Rent: ₦${prop.rentMonthly.toLocaleString()}/mo</span>
+                  </div>
+                  <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 text-xs">
+                    ${editingPropId === prop.id
+                      ? `<button onclick="savePropEdit(${prop.id})" class="bg-emerald-600 text-white px-3 py-1 rounded-lg font-bold">Save</button>`
+                      : `<button onclick="editingPropId = ${prop.id}; renderAll();" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-lg font-semibold"><i class="fas fa-edit mr-1"></i>Edit</button>`
+                    }
+                    <button onclick="deleteUserProp(${prop.id})" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-3 py-1 rounded-lg font-semibold"><i class="fas fa-trash mr-1"></i>Delete</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </section>
+
+          <section class="space-y-4 pt-6 border-t border-slate-200">
+            <h2 class="text-2xl font-serif font-bold text-slate-900">Inquiries & Speech Bubble Chat Space</h2>
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-3 min-h-[450px]">
+              <div class="border-r border-slate-100 bg-slate-50/50 p-4 space-y-3">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Interested Buyers</h4>
+                ${chats.map(c => `
+                  <div onclick="selectedChatId = ${c.id}; renderAll();" class="p-3 rounded-2xl cursor-pointer transition-all border ${
+                    selectedChatId === c.id ? 'bg-amber-50 border-amber-300 shadow-sm' : 'bg-white border-slate-200 hover:bg-slate-100'
+                  }">
+                    <div class="font-bold text-xs text-slate-900">${escapeHtml(c.buyerName)}</div>
+                    <div class="text-[11px] text-slate-500 truncate mt-0.5">${escapeHtml(c.propertyTitle)}</div>
+                  </div>
+                `).join('')}
+              </div>
+
+              <div class="md:col-span-2 flex flex-col justify-between p-4 sm:p-6 bg-slate-50/30">
+                <div>
+                  <div class="border-b border-slate-200/60 pb-3 mb-4">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase">Chat regarding:</span>
+                    <div class="font-bold text-sm text-slate-900">${escapeHtml(currentChat.propertyTitle)}</div>
+                    <div class="text-xs text-slate-500">Buyer: ${escapeHtml(currentChat.buyerName)} (${escapeHtml(currentChat.buyerEmail)})</div>
+                  </div>
+                  <div class="space-y-4 overflow-y-auto max-h-72 pr-2 mb-4">
+                    ${currentChat.messages.map(m => `
+                      <div class="flex flex-col ${m.sender === 'owner' ? 'items-end' : 'items-start'}">
+                        <div class="max-w-xs sm:max-w-md p-3.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                          m.sender === 'owner' ? 'bg-amber-500 text-slate-950 rounded-br-none font-medium' : 'bg-slate-900 text-white rounded-bl-none'
+                        }">${escapeHtml(m.text)}</div>
+                        <span class="text-[10px] text-slate-400 mt-1 px-1">${escapeHtml(m.time)}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+                <form onsubmit="sendChatReply(event)" class="flex gap-2 pt-3 border-t border-slate-200/60">
+                  <input id="chat-reply-input" type="text" placeholder="Type your message reply..." class="flex-grow bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-amber-500" />
+                  <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition-colors text-xs flex items-center gap-1.5">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Send</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    function savePropEdit(id) {
+      const input = document.getElementById(`edit-title-input-${id}`);
+      if (input && input.value.trim()) {
+        properties = properties.map(p => p.id === id ? { ...p, title: input.value.trim() } : p);
+      }
+      editingPropId = null;
+      showToast('Property updated successfully!');
+      renderAll();
+    }
+
+    function deleteUserProp(id) {
+      properties = properties.filter(p => p.id !== id);
+      showToast('Listing deleted.');
+      renderAll();
+    }
+
+    function sendChatReply(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-reply-input');
+      if (!input || !input.value.trim()) return;
+      const currentChat = chats.find(c => c.id === selectedChatId) || chats[0];
+      currentChat.messages.push({
+        sender: 'owner',
+        text: input.value.trim(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      showToast('Reply sent!');
+      renderAll();
+    }
+
+    // ==========================================
+    // 5. CONTACT ADMIN VIEW
+    // ==========================================
+    function renderContactAdminView() {
+      const admins = [
+        {
+          name: "Onwudinjo Daniel Chinedu",
+          role: "Main Executive Administrator & Managing Partner",
+          whatsapp: "+234 803 605 7747",
+          phoneRaw: "2348036057747",
+          email: "daniel.chinedu@gmail.com",
+          image: "c:\Users\HP\Pictures\Screenshots\Screenshot 2026-11-21 220710.png",
+          main: true
+        },
+        {
+          name: "Victoria Adebayo",
+          role: "Senior Listings Officer",
+          whatsapp: "+234 802 111 2233",
+          phoneRaw: "2348021112233",
+          email: "victoria.adebayo@gmail.com",
+          image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+          main: false
+        }
+      ];
+
+      return `
+        <div class="max-w-5xl mx-auto px-4 py-12 space-y-10">
+          <div class="text-center space-y-3">
+            <span class="bg-amber-500/10 border border-amber-500/30 text-amber-700 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
+              Official Administrative Office
+            </span>
+            <h1 class="text-3xl sm:text-5xl font-serif font-bold text-slate-900">Contact Website Admin</h1>
+            <p class="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">
+              Meeting times for property inspections are not fixed automatically. Clients must contact our main admin to discuss mutually required meeting times.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            ${admins.map(a => `
+              <div class="bg-white rounded-3xl p-6 sm:p-8 border shadow-xl flex flex-col justify-between space-y-6 ${
+                a.main ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-200'
+              }">
+                <div class="space-y-4">
+                  ${a.main ? `<span class="bg-amber-500 text-slate-950 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider inline-block">★ Primary Lead Admin</span>` : ''}
+                  <div class="flex items-center gap-4">
+                    <img src="${a.image}" class="w-16 h-16 rounded-2xl object-cover border-2 border-slate-900" />
+                    <div>
+                      <h3 class="font-serif font-bold text-xl text-slate-900">${escapeHtml(a.name)}</h3>
+                      <p class="text-xs text-amber-600 font-semibold">${escapeHtml(a.role)}</p>
+                    </div>
+                  </div>
+                  <div class="space-y-2.5 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div class="flex items-center gap-2"><i class="fab fa-whatsapp text-emerald-600 text-sm"></i><span class="font-bold text-slate-900">WhatsApp / Phone:</span><span>${escapeHtml(a.whatsapp)}</span></div>
+                    <div class="flex items-center gap-2"><i class="fas fa-envelope text-amber-600"></i><span class="font-bold text-slate-900">Email:</span><span>${escapeHtml(a.email)}</span></div>
+                  </div>
+                </div>
+                <a href="https://wa.me/${a.phoneRaw}?text=${encodeURIComponent(`Hello ${a.name}, I would like to discuss a property meeting time.`)}" target="_blank" rel="noopener noreferrer" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                  <i class="fab fa-whatsapp text-base"></i>
+                  <span>Chat on WhatsApp (${escapeHtml(a.whatsapp)})</span>
+                </a>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 6. MEETING MODAL & AUTH MODAL
+    // ==========================================
+    function triggerScheduleMeeting(propId) {
+      if (!currentUser) {
+        openAuthModal('You must sign up or log in before booking a meeting with the admin.');
+        return;
+      }
+      const prop = properties.find(p => p.id === propId);
+      if (!prop) return;
+
+      document.getElementById('modal-root').innerHTML = `
+        <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-fade-in">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="font-serif font-bold text-lg text-slate-900">Discuss Meeting Time</h3>
+                <p class="text-[11px] text-slate-500">Contact Admin Onwudinjo Daniel Chinedu</p>
+              </div>
+              <button onclick="closeModal()"><i class="fas fa-times text-slate-400"></i></button>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl text-xs text-amber-900 space-y-1">
+              <div class="font-bold">⚠️ Note on Meeting Times:</div>
+              <div>The required meeting time cannot be fixed by just clicking a calendar slot. You must contact the Admin directly to discuss and confirm a convenient time to meet.</div>
+            </div>
+            <form onsubmit="submitMeetingWhatsApp(event, ${prop.id})" class="space-y-4 text-xs">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Target Property</label>
+                <input type="text" readonly value="${escapeHtml(prop.title)}" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 font-bold text-slate-800" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Your Name & Contact</label>
+                <input type="text" readonly value="${escapeHtml(currentUser.name)} (${escapeHtml(currentUser.phone || currentUser.email)})" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-800" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Propose Preferred Days / Questions for Admin</label>
+                <textarea id="meeting-notes" rows="3" placeholder="e.g. I am free this Thursday afternoon or Saturday morning. Please let me know what works for you." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-500"></textarea>
+              </div>
+              <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                <i class="fab fa-whatsapp text-base"></i>
+                <span>Connect on WhatsApp (+234 803 605 7747)</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function submitMeetingWhatsApp(e, propId) {
+      e.preventDefault();
+      const prop = properties.find(p => p.id === propId);
+      const notes = document.getElementById('meeting-notes')?.value || '';
+      const url = `https://wa.me/2348036057747?text=${encodeURIComponent(
+        `Hello Admin Onwudinjo Daniel Chinedu!\nMy name is ${currentUser.name}.\nI am interested in property: "${prop.title}" (${prop.address}).\nMy Preferred Notes/Time Discussion: ${notes}`
+      )}`;
+      window.open(url, '_blank');
+      showToast('Redirecting to WhatsApp to discuss required meeting time with Admin Daniel...');
+      closeModal();
+    }
+
+    // AUTH MODAL WITH PASSWORD VALIDATION & SHOW/HIDE TOGGLE
+    let authIsSignUp = true;
+    let authIntentMsg = '';
+    let authErrMsg = '';
+
+    function openAuthModal(reason) {
+      authIntentMsg = reason || 'Please log in or sign up to proceed.';
+      authErrMsg = '';
+      renderAuthModal();
+    }
+
+    function toggleAuthMode(signUpMode) {
+      authIsSignUp = signUpMode;
+      authErrMsg = '';
+      renderAuthModal();
+    }
+
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (!input || !icon) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    }
+
+    function renderAuthModal() {
+      document.getElementById('modal-root').innerHTML = `
+        <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-fade-in">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 class="font-serif font-bold text-lg text-slate-900">${authIsSignUp ? 'Create Account / Sign Up' : 'Sign In to Account'}</h3>
+              <button onclick="closeModal()"><i class="fas fa-times text-slate-400"></i></button>
+            </div>
+
+            ${authIntentMsg ? `
+              <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-900 font-medium flex items-center gap-2">
+                <i class="fas fa-lock text-amber-600"></i>
+                <span>${escapeHtml(authIntentMsg)}</span>
+              </div>
+            ` : ''}
+
+            ${authErrMsg ? `
+              <div class="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs font-semibold">
+                ${escapeHtml(authErrMsg)}
+              </div>
+            ` : ''}
+
+            <form onsubmit="handleAuthSubmit(event)" class="space-y-3.5 text-xs">
+              ${authIsSignUp ? `
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Full Name *</label>
+                  <input id="auth-name" type="text" required placeholder="e.g. Chidi Nnamdi" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-amber-500" />
+                </div>
+              ` : ''}
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Email Address *</label>
+                <input id="auth-email" type="email" required placeholder="user@gmail.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-amber-500" />
+              </div>
+
+              ${authIsSignUp ? `
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
+                  <input id="auth-phone" type="tel" placeholder="+234 800 000 0000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-amber-500" />
+                </div>
+              ` : ''}
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Password *</label>
+                <div class="relative">
+                  <input id="auth-pass" type="password" required placeholder="Min 6 characters" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-slate-800 focus:outline-none focus:border-amber-500" />
+                  <button type="button" onclick="togglePasswordVisibility('auth-pass', 'eye-pass')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <i id="eye-pass" class="fas fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+
+              ${authIsSignUp ? `
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Confirm Password *</label>
+                  <div class="relative">
+                    <input id="auth-confirm" type="password" required placeholder="Re-enter password" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-slate-800 focus:outline-none focus:border-amber-500" />
+                    <button type="button" onclick="togglePasswordVisibility('auth-confirm', 'eye-confirm')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      <i id="eye-confirm" class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
+
+              <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider mt-2">
+                ${authIsSignUp ? 'Sign Up & Continue' : 'Sign In'}
+              </button>
+            </form>
+
+            <div class="text-center pt-2 border-t border-slate-100 text-xs text-slate-500">
+              ${authIsSignUp
+                ? `Already have an account? <button onclick="toggleAuthMode(false)" class="text-amber-600 font-bold hover:underline">Log In</button>`
+                : `Don't have an account? <button onclick="toggleAuthMode(true)" class="text-amber-600 font-bold hover:underline">Sign Up</button>`
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = (document.getElementById('auth-email')?.value || '').trim().toLowerCase();
+      const password = document.getElementById('auth-pass')?.value || '';
+
+      if (!email || !password) {
+        authErrMsg = 'Please fill in all required fields.';
+        renderAuthModal();
+        return;
+      }
+
+      if (password.length < 6) {
+        authErrMsg = 'Password must be at least 6 characters long.';
+        renderAuthModal();
+        return;
+      }
+
+      if (authIsSignUp) {
+        const name = (document.getElementById('auth-name')?.value || '').trim();
+        const phone = (document.getElementById('auth-phone')?.value || '').trim();
+        const confirm = document.getElementById('auth-confirm')?.value || '';
+
+        if (password !== confirm) {
+          authErrMsg = 'Passwords do not match. Please recheck.';
+          renderAuthModal();
+          return;
+        }
+
+        if (registeredUsers.some(u => u.email === email)) {
+          authErrMsg = 'An account with this email already exists. Please log in.';
+          renderAuthModal();
+          return;
+        }
+
+        const newUser = {
+          id: Date.now().toString(),
+          name: name || email.split('@')[0],
+          email: email,
+          phone: phone || '+234 800 000 0000',
+          password: password
+        };
+        registeredUsers.push(newUser);
+        currentUser = newUser;
+        closeModal();
+        showToast(`Account created! Welcome, ${newUser.name}!`);
+        renderAll();
+      } else {
+        const matched = registeredUsers.find(u => u.email === email && u.password === password);
+        if (matched) {
+          currentUser = matched;
+          closeModal();
+          showToast(`Welcome back, ${matched.name}!`);
+          renderAll();
+        } else if (registeredUsers.some(u => u.email === email)) {
+          authErrMsg = 'Incorrect password. Please try again.';
+          renderAuthModal();
+        } else {
+          const quickUser = {
+            id: Date.now().toString(),
+            name: email.split('@')[0],
+            email: email,
+            phone: '+234 800 000 0000',
+            password: password
+          };
+          registeredUsers.push(quickUser);
+          currentUser = quickUser;
+          closeModal();
+          showToast(`Welcome back, ${quickUser.name}!`);
+          renderAll();
+        }
+      }
+    }
+
+    // ==========================================
+    // MASTER RENDER
+    // ==========================================
+    function renderAll() {
+      renderNavigation();
+      const main = document.getElementById('main-content');
+      if (activeTab === 'home') {
+        main.innerHTML = renderHomeView();
+      } else if (activeTab === 'uploads') {
+        main.innerHTML = renderUploadView();
+      } else if (activeTab === 'messages') {
+        main.innerHTML = renderMessagesView();
+      } else if (activeTab === 'admin') {
+        main.innerHTML = renderContactAdminView();
+      }
+    }
+
+    // Initialize on load
+    window.onload = function() {
+      renderAll();
+    };
+  </script>
+</body>
+</html>
